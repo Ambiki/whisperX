@@ -79,8 +79,8 @@ def write_json(transcript: Iterator[dict], file: TextIO):
         results['segments'].append(
             {
                 'id': i,
-                'start': format_timestamp(segment['start'], always_include_hours=True, decimal_marker=','),
-                'end': format_timestamp(segment['end'], always_include_hours=True, decimal_marker=','),
+                'start': segment['start'],
+                'end': segment['end'],
                 'text': segment['text'].strip(),
                 'speaker': segment['speaker']
             }
