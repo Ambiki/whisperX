@@ -11,7 +11,7 @@ from .alignment import load_align_model, align, get_trellis, backtrack, merge_re
 from .decoding import DecodingOptions, DecodingResult
 from .diarize import assign_word_speakers, Segment
 from .tokenizer import LANGUAGES, TO_LANGUAGE_CODE, get_tokenizer
-from .utils import exact_div, format_timestamp, optional_int, optional_float, str2bool, interpolate_nans, write_txt, write_vtt, write_srt, write_ass, write_tsv
+from .utils import exact_div, format_timestamp, optional_int, optional_float, str2bool, interpolate_nans, write_txt, write_vtt, write_srt, write_ass, write_tsv, write_json
 from .vad import Binarize
 import pandas as pd
 
@@ -760,5 +760,10 @@ def cli():
             exp_fp = os.path.join(output_dir, audio_basename + ".sad")
             wrd_segs = pd.concat([x["word-segments"] for x in result_aligned["segments"]])[['start','end']]
             wrd_segs.to_csv(exp_fp, sep='\t', header=None, index=False)
+        
+        # save json
+        if output_type in ["json", "all"]:
+            with open(os.path.join(output_dir, audio_basename + ".json"), "w") as json:
+                write_json(result_aligned["segments"], file=json)
 if __name__ == "__main__":
     cli()

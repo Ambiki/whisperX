@@ -3,6 +3,7 @@ import zlib
 from typing import Callable, TextIO, Iterator, Tuple
 import pandas as pd
 import numpy as np
+import json
 
 def exact_div(x, y):
     assert x % y == 0
@@ -69,6 +70,24 @@ def write_tsv(transcript: Iterator[dict], file: TextIO):
         print(segment['end'], file=file, end="\t")
         print(segment['text'].strip().replace("\t", " "), file=file, flush=True)
 
+def write_json(transcript: Iterator[dict], file: TextIO):
+    results = {
+        'segments': []
+    }
+    
+    for i, segment in enumerate(transcript, start=1):
+        results['segments'].append(
+            {
+                'id': i,
+                'start': format_timestamp(segment['start'], always_include_hours=True, decimal_marker=','),
+                'end': format_timestamp(segment['end'], always_include_hours=True, decimal_marker=','),
+                'text': segment['text'].strip(),
+                'speaker': segment['speaker']
+            }
+        )
+
+    json_object = json.dumps(results, indent=2)
+    file.write(json_object)
 
 def write_srt(transcript: Iterator[dict], file: TextIO):
     """
