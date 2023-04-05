@@ -9,7 +9,7 @@ from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 import torchaudio
 import torch
 from dataclasses import dataclass
-from .audio import SAMPLE_RATE, load_audio
+from whisper.audio import SAMPLE_RATE, load_audio
 from .utils import interpolate_nans
 
 
@@ -372,10 +372,7 @@ def align(
     for sdx, srow in segments_arr.iterrows():
 
         seg_idx = int(srow["segment-idx"])
-        try:
-            sub_start = int(srow["subsegment-idx-start"])
-        except:
-            import pdb; pdb.set_trace()
+        sub_start = int(srow["subsegment-idx-start"])
         sub_end = int(srow["subsegment-idx-end"])
 
         seg = transcript[seg_idx]
