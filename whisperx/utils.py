@@ -43,15 +43,14 @@ def write_json(transcript: Iterator[dict], file: TextIO):
         results['segments'].append(
             {
                 'id': i,
-                'start': segment['start'],
-                'end': segment['end'],
+                'start': str(format_timestamp(segment['start'])),
+                'end': str(format_timestamp(segment['end'])),
                 'text': segment['text'].strip(),
                 'speaker': segment['speaker']
             }
         )
 
-    json_object = json.dumps(results, indent=2)
-    file.write(json_object)
+    json.dump(results, file, indent=2)
 
 def write_srt(transcript: Iterator[dict], file: TextIO):
     """
@@ -260,6 +259,12 @@ class WritePickle(ResultWriter):
 
     def write_result(self, result: dict, file: TextIO):
         pd.DataFrame(result["segments"]).to_pickle(file)
+
+class WriteSRT(ResultWriter):
+    extension: str = "srt"
+
+    def write_result(self, result: dict, file: TextIO):
+        write_srt(result["segments"], file)
 
 class WriteSRTWord(ResultWriter):
     extension: str = "word.srt"
