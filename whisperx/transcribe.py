@@ -4,7 +4,7 @@ import warnings
 from typing import TYPE_CHECKING, Optional, Tuple, Union
 import numpy as np
 import torch
-import tempfile 
+import tempfile
 import ffmpeg
 from whisper.tokenizer import LANGUAGES, TO_LANGUAGE_CODE
 from whisper.audio import SAMPLE_RATE
@@ -124,7 +124,7 @@ def cli():
         align_model, align_metadata = None, None
     else:
         align_language = args["language"] if args["language"] is not None else "en" # default to loading english if not specified
-        align_model, align_metadata = load_align_model(align_language, device, model_name=align_model)     
+        align_model, align_metadata = load_align_model(align_language, device, model_name=align_model)
 
     # if model_flush:
     #     print(">>Model flushing activated... Only loading model after ASR stage")

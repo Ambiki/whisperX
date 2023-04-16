@@ -3,13 +3,14 @@ import zlib
 from typing import Callable, TextIO, Iterator, Tuple
 import pandas as pd
 import numpy as np
+import json
 
 def interpolate_nans(x, method='nearest'):
     if x.notnull().sum() > 1:
         return x.interpolate(method=method).ffill().bfill()
     else:
         return x.ffill().bfill()
-    
+
 
 def write_txt(transcript: Iterator[dict], file: TextIO):
     for segment in transcript:
@@ -33,6 +34,23 @@ def write_tsv(transcript: Iterator[dict], file: TextIO):
         print(segment['end'], file=file, end="\t")
         print(segment['text'].strip().replace("\t", " "), file=file, flush=True)
 
+def write_json(transcript: Iterator[dict], file: TextIO):
+    results = {
+        'segments': []
+    }
+
+    for i, segment in enumerate(transcript, start=1):
+        results['segments'].append(
+            {
+                'id': i,
+                'start': str(format_timestamp(segment['start'])),
+                'end': str(format_timestamp(segment['end'])),
+                'text': segment['text'].strip(),
+                'speaker': segment['speaker']
+            }
+        )
+
+    json.dump(results, file, indent=2)
 
 def write_srt(transcript: Iterator[dict], file: TextIO):
     """
@@ -51,11 +69,12 @@ def write_srt(transcript: Iterator[dict], file: TextIO):
     """
     for i, segment in enumerate(transcript, start=1):
         # write srt lines
+        speaker = f"[{segment['speaker']}]: " if 'speaker' in segment else ''
         print(
             f"{i}\n"
             f"{format_timestamp(segment['start'], always_include_hours=True, decimal_marker=',')} --> "
             f"{format_timestamp(segment['end'], always_include_hours=True, decimal_marker=',')}\n"
-            f"{segment['text'].strip().replace('-->', '->')}\n",
+            f"{speaker}{segment['text'].strip().replace('-->', '->')}\n",
             file=file,
             flush=True,
         )
@@ -146,7 +165,7 @@ def write_ass(transcript: Iterator[dict],
 
         prefmt = r'{\1c&' + f'{color.upper()}&{underline_code}' + '}'
         suffmt = r'{\r}'
-    
+
     def secs_to_hhmmss(secs: Tuple[float, int]):
         mm, ss = divmod(secs, 60)
         hh, mm = divmod(mm, 60)
@@ -167,7 +186,7 @@ def write_ass(transcript: Iterator[dict],
         resolution_key = "char-segments"
     else:
         raise ValueError(".ass resolution should be 'word' or 'char', not ", resolution)
-    
+
     ass_arr = []
 
     for segment in transcript:
@@ -229,11 +248,23 @@ class WriteASSchar(ResultWriter):
     def write_result(self, result: dict, file: TextIO):
         write_ass(result["segments"], file, resolution="char")
 
+class WriteJSON(ResultWriter):
+    extension: str = "json"
+
+    def write_result(self, result: dict, file: TextIO):
+        write_json(result["segments"], file)
+
 class WritePickle(ResultWriter):
     extension: str = "ass"
 
     def write_result(self, result: dict, file: TextIO):
         pd.DataFrame(result["segments"]).to_pickle(file)
+
+class WriteSRT(ResultWriter):
+    extension: str = "srt"
+
+    def write_result(self, result: dict, file: TextIO):
+        write_srt(result["segments"], file)
 
 class WriteSRTWord(ResultWriter):
     extension: str = "word.srt"
@@ -289,6 +320,7 @@ def get_writer(output_format: str, output_dir: str) -> Callable[[dict, TextIO], 
         "srt": WriteSRT,
         "tsv": WriteTSV,
         "ass": WriteASS,
+        "json": WriteJSON,
         "srt-word": WriteSRTWord,
         # "ass-char": WriteASSchar,
         # "pickle": WritePickle,
