@@ -12,9 +12,7 @@ class DiarizationPipeline:
 
     def __call__(self, audio, min_speakers=None, max_speakers=None):
         segments = self.model(audio, min_speakers=min_speakers, max_speakers=max_speakers)
-        diarize_df = pd.DataFrame(segments.itertracks(yield_label=True))
-        diarize_df['start'] = diarize_df[0].apply(lambda x: x.start)
-        diarize_df['end'] = diarize_df[0].apply(lambda x: x.end)
+        diarize_df = pd.DataFrame([(seg.start, seg.end, label, seg.attributes['scores'][label]) for seg, label in segments.itertracks(yield_label=True)], columns=['start', 'end', 'speaker', 'confidence'])
         return diarize_df
 
 def assign_word_speakers(diarize_df, result_segments, fill_nearest=False):
@@ -41,15 +39,22 @@ def assign_word_speakers(diarize_df, result_segments, fill_nearest=False):
                 if len(dia_tmp) == 0:
                     print("No speaker found for this word segment")
                     speaker = None
+                    confidence = None
                 else:
                     print("Assigning speaker with highest intersection")
-                    speaker = dia_tmp.sort_values("intersection", ascending=False).iloc[0][2]
+                    speaker_row = dia_tmp.sort_values("intersection", ascending=False).iloc[0]
+                    speaker = speaker_row['speaker']
+                    confidence = speaker_row['confidence']
+                    print(f"Speaker: {speaker}")
+                    print(f"Confidence: {confidence}")
             else:
                 print("No start time for this word segment, speaker set to None")
                 speaker = None
-            speakers.append(speaker)
+                confidence = None
+            speakers.append((speaker, confidence))
         print("Assigning speakers to word-segments")
-        seg['word-segments']['speaker'] = speakers
+        seg['word-segments']['speaker'] = [s[0] for s in speakers]
+        seg['word-segments']['confidence'] = [s[1] for s in speakers]
 
         print("Determining the main speaker for the segment")
         speaker_count = pd.Series(speakers).value_counts()
